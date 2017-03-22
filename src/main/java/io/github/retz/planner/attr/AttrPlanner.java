@@ -14,7 +14,7 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package io.github.retz.planner.random;
+package io.github.retz.planner.attr;
 
 import io.github.retz.planner.spi.Plan;
 import io.github.retz.planner.spi.Planner;
@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-public class RandomPlanner implements Planner{
-    private static final Logger LOG = LoggerFactory.getLogger(RandomPlanner.class);
+public class AttrPlanner implements Planner{
+    private static final Logger LOG = LoggerFactory.getLogger(AttrPlanner.class);
     private static final List<String> ORDER_BY = Arrays.asList("id");
     private Random random;
     private int maxStock;

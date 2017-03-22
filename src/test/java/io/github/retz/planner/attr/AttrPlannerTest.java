@@ -14,13 +14,13 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
-package io.github.retz.planner.random;
+package io.github.retz.planner.attr;
 
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
-public class RandomPlannerTest {
+public class AttrPlannerTest {
     @Test
     public void hello() {
         assertTrue(true);
