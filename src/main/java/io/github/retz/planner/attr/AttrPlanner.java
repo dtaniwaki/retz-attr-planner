@@ -23,31 +23,45 @@ public class AttrPlanner extends FIFOPlanner {
 
     @Override
     public Plan plan(Map<String, Offer> offers, List<Job> jobs) {
-
         Plan plan = new Plan();
-        List<Job> queue = new LinkedList<>(jobs);
-        for (Map.Entry<String, Offer> entry : offers.entrySet()) {
-            ResourceQuantity total = new ResourceQuantity();
-            while (!queue.isEmpty() && entry.getValue().resource().cpu() - total.getCpu() > 0) {
-                Job job = queue.get(0);
-                ResourceQuantity temp = total.copy(total);
-                temp.add(job.resources());
-                if (entry.getValue().resource().toQuantity().fits(temp)) {
-                    plan.setJob(entry.getKey(), job);
-                    queue.remove(0);
-                    total.add(job.resources());
+        List<Job> jobQueue = new LinkedList<>(jobs);
+        for (Map.Entry<String, Offer> offerEntry : offers.entrySet()) {
+            Offer offer = offerEntry.getValue();
+            String offerKey = offerEntry.getKey();
+
+            ResourceQuantity totalUsedResources = new ResourceQuantity();
+
+            // loop over the not-yet-scheduled jobs and assign them to the
+            // current offer, if that is still capable of handling the job
+            while (!jobQueue.isEmpty() && offer.resource().cpu() - totalUsedResources.getCpu() > 0) {
+                Job nextJob = jobQueue.get(0);
+                // compute the resources that "would be" used if we also
+                // scheduled the nextJob here
+                ResourceQuantity wouldbeUsedResources = totalUsedResources.copy(totalUsedResources);
+                wouldbeUsedResources.add(nextJob.resources());
+
+                // check if the offer would still be able to satisfy those
+                // "would be needed" resources
+                if (offer.resource().toQuantity().fits(wouldbeUsedResources)) {
+                    // if so, assign nextJob to this offer
+                    plan.setJob(offerKey, nextJob);
+                    jobQueue.remove(0);
+                    totalUsedResources.add(nextJob.resources());
                 } else {
+                    // if not, we assume that this offer is "full" and continue
+                    // with the next one
                     break;
                 }
             }
-            if (!plan.getJobSpecs().containsKey(entry.getKey())
+            if (!plan.getJobSpecs().containsKey(offerKey)
                     && plan.getOfferIdsToStock().size() < maxStock) {
-                // No jobs found for this offer
-                plan.addStock(entry.getKey());
+                // No jobs found for this offer, keep for later
+                plan.addStock(offerKey);
             }
         }
-        if (!queue.isEmpty()) {
-            plan.addKeep(queue);
+        if (!jobQueue.isEmpty()) {
+            // no offers found for some jobs, keep for later
+            plan.addKeep(jobQueue);
         }
         LOG.debug("Plan => {}", plan);
         return plan;
