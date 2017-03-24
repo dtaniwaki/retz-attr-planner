@@ -1,6 +1,7 @@
 package io.github.retz.planner.attr;
 
 import io.github.retz.planner.builtin.FIFOPlanner;
+import io.github.retz.planner.spi.Attribute;
 import io.github.retz.planner.spi.Offer;
 import io.github.retz.planner.spi.Plan;
 import io.github.retz.protocol.data.Job;
@@ -95,5 +96,76 @@ public class AttrPlanner extends FIFOPlanner {
 
         LOG.debug("Plan => {}", plan);
         return plan;
+    }
+
+    protected static boolean matches(List<Attribute> offerAttrs, String required) {
+        String[] components = required.split(";");
+
+        // no requirements => always matches
+        if (components.length == 0 || (components.length == 1 && components[0].equals(""))) {
+            return true;
+        }
+
+        // requirements given and no attributes in offer => always fails
+        if (components.length > 0 && offerAttrs.size() == 0) {
+            return false;
+        }
+
+        // now check each of the given rules
+        for (String cmp : components) {
+            String[] rule = cmp.split(":");
+            if (rule.length != 2) {
+                throw new RuntimeException("attribute requirement '" + cmp +
+                        "' does not have the required format 'key:value'");
+            }
+            String key = rule[0];
+            String requiredValue = rule[1];
+
+            // find a matching value in offerAttrs
+            boolean found = false;
+            for (Attribute attr : offerAttrs) {
+                if (attr.name().equals(key)) {
+                    if (attr.isRanges()) {
+                        throw new RuntimeException("range checks (for attribute '" +
+                                attr.name() + "' are not implemented yet");
+                    } else if (attr.isSet()) {
+                        throw new RuntimeException("set checks (for attribute '" +
+                                attr.name() + "' are not implemented yet");
+                    } else if (attr.isText()) {
+                        String actual = attr.asTest();
+                        if (actual.equals(requiredValue)) {
+                            // requirement matches offered value => this requirement matches
+                            found = true;
+                            break;
+                        } else {
+                            // requirement does not match offered value => fail
+                            return false;
+                        }
+                    } else if (attr.isScalar()) {
+                        double actual = attr.asScalar();
+                        double requiredDoubleValue = Double.parseDouble(requiredValue);
+                        if (Math.abs(actual - requiredDoubleValue) < 0.000001) {
+                            // requirement matches offered value => this requirement matches
+                            found = true;
+                            break;
+                        } else {
+                            // requirement does not match offered value => fail
+                            return false;
+                        }
+                    } else {
+                        throw new RuntimeException("unknown attribute type for " +
+                                "object: " + attr.toString());
+                    }
+                }
+            }
+            // if none of the offered attributes matched the requirement, fail
+            if (!found) {
+                return false;
+            }
+        }
+
+        // if we arrive here, then all of the rules in the requirement string
+        // had a matching attribute in the offer, that means it matched
+        return true;
     }
 }
