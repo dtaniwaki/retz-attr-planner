@@ -131,7 +131,7 @@ public class AttrPlanner extends FIFOPlanner {
                         throw new RuntimeException("set checks (for attribute '" +
                                 attr.name() + "' are not implemented yet");
                     } else if (attr.isText()) {
-                        String actual = attr.asTest();
+                        String actual = attr.asText();
                         if (actual.equals(requiredValue)) {
                             // requirement matches offered value => this requirement matches
                             found = true;
