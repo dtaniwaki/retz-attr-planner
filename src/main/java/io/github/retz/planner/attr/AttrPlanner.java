@@ -43,8 +43,8 @@ public class AttrPlanner extends FIFOPlanner {
         Collections.sort(jobQueue, new Comparator<Job>() {
             @Override
             public int compare(Job p1, Job p2) {
-                // sort increasing by priority
-                int prioCmp = p1.priority() - p2.priority();
+                // sort decreasing by priority
+                int prioCmp = p2.priority() - p1.priority();
                 if (prioCmp != 0) {
                     return prioCmp;
                 }
