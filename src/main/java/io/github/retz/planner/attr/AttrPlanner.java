@@ -69,10 +69,9 @@ public class AttrPlanner extends FIFOPlanner {
             // try to find an offer that matches
             boolean found = false;
             for (Offer offer : availableOffers) {
-                // TODO if the job has an attribute constraint, check if the offer satisfies that constraint
-
                 // check if this offer can satisfy the job constraints
-                if (offer.resource().toQuantity().fits(j)) {
+                if (offer.resource().toQuantity().fits(j) &&
+                        matches(offer.attributes(), j.attributes().orElse(""))) {
                     plan.setJob(offer.id(), j);
                     availableOffers.remove(offer);
                     found = true;

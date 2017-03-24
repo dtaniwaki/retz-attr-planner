@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AttrPlannerTest {
     private Map<String, Offer> mkOffers() {
@@ -36,7 +37,7 @@ public class AttrPlannerTest {
 
     private Planner getPlanner() {
         Planner p = new AttrPlanner();
-        p.setMaxStock(2);
+        p.setMaxStock(3);
         return p;
     }
 
@@ -109,5 +110,83 @@ public class AttrPlannerTest {
         // expected: job is kept for later
         assertEquals(1, x.getToKeep().size());
         assertEquals(x.getToKeep().get(0), jobs.get(0));
+    }
+
+    @Test
+    public void attrSimpleMatch() {
+        Map<String, Offer> offers = mkAttrOffers();
+
+        // list of jobs, first job can only be used with offer
+        // that has matching attribute
+        List<Job> jobs = new LinkedList<>();
+        jobs.add(new Job("test-app", "hostname", System.getProperties(),
+                1, 129, 0, 0, 0, "rack:A"));
+
+        // test planner
+        Plan x = getPlanner().plan(offers, jobs);
+
+        // expected: offer ghi is assigned to that job
+        assertEquals(1, x.getJobSpecs().size());
+        for (Map.Entry<String, List<Job>> entry : x.getJobSpecs().entrySet()) {
+            assertEquals("ghi", entry.getKey());
+            assertEquals(1, entry.getValue().size());
+        }
+        // expected: both other offers are added to stock
+        assertEquals(2, x.getOfferIdsToStock().size());
+        // expected: no jobs are kept for later
+        assertEquals(0, x.getToKeep().size());
+    }
+
+    @Test
+    public void noAttrMatch() {
+        Map<String, Offer> offers = mkAttrOffers();
+
+        // list of jobs, no offer can satisfy requirements
+        List<Job> jobs = new LinkedList<>();
+        jobs.add(new Job("test-app", "hostname", System.getProperties(),
+                1, 1024, 0, 0, 0, "rack:B"));
+
+        // test planner
+        Plan x = getPlanner().plan(offers, jobs);
+
+        // expected: no offer is assigned to that job
+        assertEquals(0, x.getJobSpecs().size());
+        // expected: all offers are added to stock
+        assertEquals(3, x.getOfferIdsToStock().size());
+        // expected: job is kept for later
+        assertEquals(1, x.getToKeep().size());
+        assertEquals(x.getToKeep().get(0), jobs.get(0));
+    }
+
+    @Test
+    public void multiMatch() {
+        Map<String, Offer> offers = mkAttrOffers();
+
+        // list of jobs, first job can only be used with offer
+        // that has matching attribute
+        List<Job> jobs = new LinkedList<>();
+        jobs.add(new Job("test-app", "hostname", System.getProperties(),
+                1, 129, 0, 0, 0));
+        jobs.add(new Job("test-app", "hostname", System.getProperties(),
+                1, 64, 0, 0, 0, "rack:B"));
+        jobs.add(new Job("test-app", "hostname", System.getProperties(),
+                1, 64, 0, 0, 0, "rack:A"));
+
+        // test planner
+        Plan x = getPlanner().plan(offers, jobs);
+
+        // expected: offer ghi is assigned to that job
+        assertEquals(2, x.getJobSpecs().size());
+        // job with attribute requirements is scheduled first and to the correct offer
+        assertTrue(x.getJobSpecs().containsKey("ghi"));
+        assertEquals(x.getJobSpecs().get("ghi").get(0), jobs.get(2));
+        // other job is scheduled later and to the correct offer
+        assertTrue(x.getJobSpecs().containsKey("def"));
+        assertEquals(x.getJobSpecs().get("def").get(0), jobs.get(0));
+        // expected: other offer is added to stock
+        assertEquals(1, x.getOfferIdsToStock().size());
+        // expected: other job with attribute is kept for later
+        assertEquals(1, x.getToKeep().size());
+        assertEquals(jobs.get(1), x.getToKeep().get(0));
     }
 }
