@@ -1,9 +1,6 @@
 package io.github.retz.planner.attr;
 
-import io.github.retz.planner.spi.Offer;
-import io.github.retz.planner.spi.Plan;
-import io.github.retz.planner.spi.Planner;
-import io.github.retz.planner.spi.Resource;
+import io.github.retz.planner.spi.*;
 import io.github.retz.protocol.data.Job;
 import org.junit.Test;
 
@@ -15,13 +12,32 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class AttrPlannerTest {
-    Map<String, Offer> mkOffers() {
+    private Map<String, Offer> mkOffers() {
         Map<String, Offer> offers = new HashMap<>();
         Resource abc = new Resource(2.0, 128, 555);
         offers.put("abc", new Offer("abc", abc));
         Resource def = new Resource(1.0, 256, 123);
         offers.put("def", new Offer("def", def));
         return offers;
+    }
+
+    private Map<String, Offer> mkAttrOffers() {
+        Map<String, Offer> offers = new HashMap<>();
+        Resource abc = new Resource(2.0, 128, 555);
+        offers.put("abc", new Offer("abc", abc));
+        Resource def = new Resource(1.0, 256, 123);
+        offers.put("def", new Offer("def", def));
+        Resource ghi = new Resource(1.0, 256, 123);
+        List<Attribute> attrs = new LinkedList<>();
+        attrs.add(new Attribute("rack", Attribute.Type.TEXT, "A"));
+        offers.put("ghi", new Offer("ghi", ghi, attrs));
+        return offers;
+    }
+
+    private Planner getPlanner() {
+        Planner p = new AttrPlanner();
+        p.setMaxStock(2);
+        return p;
     }
 
     @Test
@@ -34,8 +50,7 @@ public class AttrPlannerTest {
                 1, 64, 0, 0, 0));
 
         // test planner
-        Planner p = new AttrPlanner();
-        Plan x = p.plan(offers, jobs);
+        Plan x = getPlanner().plan(offers, jobs);
 
         // expected: offer abc is assigned to that job
         assertEquals(1, x.getJobSpecs().size());
@@ -43,6 +58,11 @@ public class AttrPlannerTest {
             assertEquals("abc", entry.getKey());
             assertEquals(1, entry.getValue().size());
         }
+        // expected: offer def is added to stock
+        assertEquals(1, x.getOfferIdsToStock().size());
+        assertEquals("def", x.getOfferIdsToStock().get(0));
+        // expected: no jobs are kept for later
+        assertEquals(0, x.getToKeep().size());
     }
 
     @Test
@@ -55,8 +75,7 @@ public class AttrPlannerTest {
                 1, 129, 0, 0, 0));
 
         // test planner
-        Planner p = new AttrPlanner();
-        Plan x = p.plan(offers, jobs);
+        Plan x = getPlanner().plan(offers, jobs);
 
         // expected: offer def is assigned to that job
         assertEquals(1, x.getJobSpecs().size());
@@ -64,6 +83,11 @@ public class AttrPlannerTest {
             assertEquals("def", entry.getKey());
             assertEquals(1, entry.getValue().size());
         }
+        // expected: offer abc is added to stock
+        assertEquals(1, x.getOfferIdsToStock().size());
+        assertEquals("abc", x.getOfferIdsToStock().get(0));
+        // expected: no jobs are kept for later
+        assertEquals(0, x.getToKeep().size());
     }
 
     @Test
@@ -76,10 +100,14 @@ public class AttrPlannerTest {
                 1, 1024, 0, 0, 0));
 
         // test planner
-        Planner p = new AttrPlanner();
-        Plan x = p.plan(offers, jobs);
+        Plan x = getPlanner().plan(offers, jobs);
 
         // expected: no offer is assigned to that job
         assertEquals(0, x.getJobSpecs().size());
+        // expected: both offers are added to stock
+        assertEquals(2, x.getOfferIdsToStock().size());
+        // expected: job is kept for later
+        assertEquals(1, x.getToKeep().size());
+        assertEquals(x.getToKeep().get(0), jobs.get(0));
     }
 }
