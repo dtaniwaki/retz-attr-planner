@@ -25,7 +25,7 @@ public class AttrPlanner extends FIFOPlanner {
          * -------------
          *
          * This plan will first sort the given jobs
-         *  1. by priority
+         *  1. by priority (descending)
          *  2. by whether they have attributes or not
          *  3. by required number of GPUs (descending).
          * This ensures that we can first prioritize a whole number of tasks that
