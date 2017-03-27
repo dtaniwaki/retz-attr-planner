@@ -39,6 +39,6 @@ make jar
 ```
 
 and place `build/libs/retz-attr-planner-0.0.1-SNAPSHOT.jar`
-to the classpath configured in `retz.properties`.  Also, the
-planner must be activated by setting
+to the classpath configured with the `retz.classpath` option.
+Also, the planner must be activated by setting
 `retz.planner.name = io.github.retz.planner.attr.AttrPlanner`.
