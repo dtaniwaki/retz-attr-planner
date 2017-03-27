@@ -34,7 +34,7 @@ license {
     header rootProject.file('LICENSE-HEADER.template')
     strictCheck true
     ext.year = '2017'
-    ext.name = 'Nautilus Technologies, Inc.'
+    ext.name = 'Preferred Networks, Inc.'
 }
 
 task wrapper(type: Wrapper) {
